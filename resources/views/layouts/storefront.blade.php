@@ -11,10 +11,12 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url()->current() }}">
 
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body class="bg-[#FCFCFA] text-stone-800 antialiased selection:bg-[#9C451B] selection:text-white" x-data="quoteModal()">
+<body class="bg-[#FCFCFA] text-stone-800 antialiased selection:bg-[#9C451B] selection:text-white" x-data="rfqManager()">
 
     <!-- Top Utility Bar -->
     <header class="bg-[#091433] text-stone-300 text-xs border-b border-stone-800/80">
@@ -119,8 +121,11 @@
                     <a href="{{ route('catalog.index') }}" class="p-2 text-stone-300 hover:text-[#EBD6B4] transition-colors" title="Search catalog">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </a>
-                    <button @click="triggerQuote('', '')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#9C451B] hover:bg-[#b85322] text-white font-medium text-sm shadow-md hover:shadow-lg transition-all transform active:scale-95">
-                        <span>Request a Quote</span>
+                    <button @click="openModal()" class="relative inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#9C451B] hover:bg-[#b85322] text-white font-medium text-sm shadow-md hover:shadow-lg transition-all transform active:scale-95">
+                        <span>Quotation Request</span>
+                        <template x-if="count > 0">
+                            <span x-text="count" class="px-1.5 py-0.5 text-[11px] font-bold bg-white text-[#9C451B] rounded-full leading-none"></span>
+                        </template>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </button>
                 </div>
@@ -156,8 +161,11 @@
                 Contact & Office
             </a>
             <div class="pt-2">
-                <button @click="triggerQuote('', ''); mobileMenuOpen = false" class="w-full text-center py-3 rounded-lg bg-[#9C451B] text-white font-medium text-sm">
-                    Request a Formal Quote
+                <button @click="openModal(); mobileMenuOpen = false" class="w-full text-center py-3 rounded-lg bg-[#9C451B] text-white font-medium text-sm flex items-center justify-center gap-2">
+                    <span>Request a Formal Quote</span>
+                    <template x-if="count > 0">
+                        <span x-text="'(' + count + ' items)'" class="font-bold text-[#EBD6B4] text-xs"></span>
+                    </template>
                 </button>
             </div>
         </div>
@@ -197,6 +205,21 @@
         @yield('content')
     </main>
 
+    <!-- Floating Add-to-Quote Toast Notification -->
+    <div x-show="toastMessage" 
+         x-cloak 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-4"
+         class="fixed bottom-6 right-6 z-50 bg-[#091433] text-white px-5 py-3.5 rounded-xl shadow-2xl border border-[#EBD6B4]/40 flex items-center gap-3">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span x-text="toastMessage" class="text-xs font-semibold"></span>
+        <button type="button" @click="openModal()" class="text-xs text-[#EBD6B4] font-bold hover:underline ml-2">View List &rarr;</button>
+    </div>
+
     <!-- Global Interactive Request a Quote Modal -->
     <div x-show="open" 
          x-cloak
@@ -213,7 +236,7 @@
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0"
                  @click="closeModal()" 
-                 class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"></div>
+                 class="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"></div>
 
             <!-- Modal Panel -->
             <div x-show="open" 
@@ -223,111 +246,190 @@
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:scale-95"
-                 class="relative inline-block w-full max-w-2xl p-6 sm:p-8 my-8 text-left bg-white rounded-2xl shadow-2xl overflow-hidden z-10 border border-stone-200">
+                 class="relative inline-block w-full max-w-3xl p-6 sm:p-8 my-8 text-left bg-white rounded-2xl shadow-2xl overflow-hidden z-10 border border-stone-200 max-h-[90vh] overflow-y-auto">
                 
                 <div class="flex items-center justify-between pb-4 border-b border-stone-200">
                     <div>
-                        <span class="text-xs uppercase tracking-wider font-bold text-[#9C451B]">B2B Direct Inquiry</span>
+                        <span class="text-xs uppercase tracking-wider font-bold text-[#9C451B]">International Trade Desk</span>
                         <h3 class="text-xl sm:text-2xl font-heading font-bold text-[#091433]">
-                            Request an Export Quotation
+                            Request an Official Quotation (RFQ)
                         </h3>
                     </div>
-                    <button @click="closeModal()" class="text-stone-400 hover:text-stone-700 p-1 rounded-lg">
+                    <button type="button" @click="closeModal()" class="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
 
-                <form action="{{ route('inquiry.quote') }}" method="POST" class="mt-6 space-y-4">
-                    @csrf
-                    <!-- Honeypot -->
-                    <input type="text" name="website_hp" value="" style="display:none !important;" tabindex="-1" autocomplete="off">
-
-                    <!-- Target Product Selector or Auto-Populated Input -->
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                            Target Product / Commodity <span class="text-rose-600">*</span>
-                        </label>
-                        <select name="product_id" x-model="productId" required class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm">
-                            <option value="">-- Select Product From Catalog --</option>
-                            @foreach(\App\Models\Product::published()->orderBy('name')->get() as $p)
-                                <option value="{{ $p->id }}">{{ $p->name }} (HS: {{ $p->hs_code ?? 'N/A' }})</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                                Full Name <span class="text-rose-600">*</span>
-                            </label>
-                            <input type="text" name="full_name" required class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm" placeholder="e.g. Johnathan Davis">
+                <!-- Success Confirmation State -->
+                <template x-if="successData">
+                    <div class="py-10 text-center space-y-4">
+                        <div class="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-inner">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                                Company / Organization
-                            </label>
-                            <input type="text" name="company_name" class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm" placeholder="e.g. Continental Food Importers LLC">
+                        <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-mono font-bold" x-text="'Registered Ref #' + successData.ref"></span>
+                        <h4 class="text-2xl font-heading font-bold text-[#091433]">Quotation Request Received</h4>
+                        <p class="text-xs sm:text-sm text-stone-600 max-w-lg mx-auto leading-relaxed" x-text="successData.message"></p>
+                        <div class="pt-4 flex justify-center gap-3">
+                            <button type="button" @click="closeModal()" class="px-6 py-2.5 rounded-lg bg-[#091433] hover:bg-[#394F3D] text-white text-xs font-bold shadow transition-colors">
+                                Return to Storefront
+                            </button>
                         </div>
                     </div>
+                </template>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                                Business Email <span class="text-rose-600">*</span>
-                            </label>
-                            <input type="email" name="email" required class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm" placeholder="buyer@domain.com">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                                Phone / WhatsApp <span class="text-rose-600">*</span>
-                            </label>
-                            <input type="text" name="phone" required class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm" placeholder="+1 555 019 2831">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                                Destination Country <span class="text-rose-600">*</span>
-                            </label>
-                            <input type="text" name="country" required class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm" placeholder="e.g. United Arab Emirates">
-                        </div>
+                <!-- RFQ Form Content -->
+                <div x-show="!successData">
+                    <!-- Error Message Banner -->
+                    <div x-show="errorMessage" x-cloak class="mt-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center justify-between">
+                        <span x-text="errorMessage"></span>
+                        <button type="button" @click="errorMessage = ''" class="text-rose-500 hover:text-rose-800 font-bold ml-2">&times;</button>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                                Target Volume <span class="text-rose-600">*</span>
-                            </label>
-                            <input type="text" name="target_quantity" required class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm" placeholder="e.g. 2 x 20ft FCL (38 MT)">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                                Packaging Needs
-                            </label>
-                            <input type="text" name="packaging_requirements" class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm" placeholder="25kg Multi-wall paper bags">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                                Discharge Port
-                            </label>
-                            <input type="text" name="port_of_destination" class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm" placeholder="e.g. Jebel Ali / Rotterdam">
-                        </div>
-                    </div>
+                    <form action="{{ route('inquiry.quote') }}" method="POST" @submit.prevent="submitRfq($el)" class="mt-6 space-y-6">
+                        @csrf
+                        <!-- Honeypot -->
+                        <input type="text" name="website_hp" value="" style="display:none !important;" tabindex="-1" autocomplete="off">
 
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                            Specific Grade, Moisture or Purity Requirements <span class="text-rose-600">*</span>
-                        </label>
-                        <textarea name="message" rows="3" required class="w-full px-3 py-2.5 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B] text-sm" placeholder="Please specify desired parameters (e.g. 99.5% Sortex, Max 6% moisture, FOB Mundra or CIF terms)..."></textarea>
-                    </div>
+                        <!-- Products in RFQ Section -->
+                        <div class="p-4 sm:p-5 rounded-xl bg-[#FAF5ED] border border-[#EBD6B4] space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#091433]">
+                                        Requested Commodities / Products
+                                    </h4>
+                                    <span class="px-2 py-0.5 rounded-full bg-[#9C451B] text-white text-[10px] font-bold" x-text="count + ' Selected'"></span>
+                                </div>
+                                <button type="button" x-show="items.length > 0" @click="clearAll()" class="text-[11px] text-stone-500 hover:text-rose-600 underline transition-colors">
+                                    Clear List
+                                </button>
+                            </div>
 
-                    <div class="pt-2 flex items-center justify-end gap-3">
-                        <button type="button" @click="closeModal()" class="px-5 py-2.5 rounded-lg border border-stone-300 text-stone-700 hover:bg-stone-50 font-medium text-sm">
-                            Cancel
-                        </button>
-                        <button type="submit" class="px-6 py-2.5 rounded-lg bg-[#091433] hover:bg-[#394F3D] text-white font-medium text-sm shadow-md transition-colors">
-                            Submit Quotation Request &rarr;
-                        </button>
-                    </div>
-                </form>
+                            <!-- List of Added Commodities -->
+                            <div x-show="items.length > 0" class="space-y-3">
+                                <template x-for="(item, idx) in items" :key="item.product_id">
+                                    <div class="p-3 bg-white rounded-lg border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-stone-900 text-sm truncate" x-text="item.name"></span>
+                                                <span class="text-[10px] text-stone-400 font-mono" x-show="item.hs_code" x-text="'HS: ' + item.hs_code"></span>
+                                            </div>
+                                            <div class="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                                <div>
+                                                    <label class="block text-[10px] text-stone-500 uppercase font-semibold">Target Volume *</label>
+                                                    <input type="text" x-model="item.quantity" @change="updateQty(item.product_id, item.quantity)" placeholder="e.g. 1 x 20ft FCL (19 MT)" class="w-full px-2.5 py-1.5 rounded border border-stone-300 text-xs bg-stone-50/50">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[10px] text-stone-500 uppercase font-semibold">Quality / Notes</label>
+                                                    <input type="text" x-model="item.notes" @change="updateNotes(item.product_id, item.notes)" placeholder="e.g. 99.5% Sortex, 25kg bags" class="w-full px-2.5 py-1.5 rounded border border-stone-300 text-xs bg-stone-50/50">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="removeItem(item.product_id)" class="self-end sm:self-center p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-stone-100 transition-colors" title="Remove product">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- When no items are in list -->
+                            <div x-show="items.length === 0" class="py-4 text-center text-xs text-stone-500">
+                                <p class="mb-2">Your quotation list is empty. Select a commodity below to add:</p>
+                            </div>
+
+                            <!-- Add Another Product Dropdown -->
+                            <div class="pt-2 border-t border-[#EBD6B4]/60 flex flex-col sm:flex-row items-center gap-2">
+                                <span class="text-[11px] font-bold text-stone-600 whitespace-nowrap">+ Add Commodity:</span>
+                                <select @change="if($event.target.value) { addProduct($event.target.value, $event.target.options[$event.target.selectedIndex].text, '1 x 20ft FCL', ''); $event.target.value = ''; }" class="flex-1 w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs bg-white focus:ring-2 focus:ring-[#9C451B]">
+                                    <option value="">-- Choose Commodity to Add to Quote --</option>
+                                    @foreach(\App\Models\Product::published()->orderBy('name')->get() as $p)
+                                        <option value="{{ $p->id }}">{{ $p->name }} ({{ $p->origin }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Buyer Contact Information -->
+                        <div class="space-y-4">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-[#091433]">
+                                Buyer & Consignment Details
+                            </h4>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                                        Full Name <span class="text-rose-600">*</span>
+                                    </label>
+                                    <input type="text" name="full_name" required x-model="fullName" class="w-full px-3 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] text-sm" placeholder="e.g. Johnathan Davis">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                                        Company / Importer Name
+                                    </label>
+                                    <input type="text" name="company_name" x-model="companyName" class="w-full px-3 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] text-sm" placeholder="e.g. Continental Trading LLC">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                                        Business Email <span class="text-rose-600">*</span>
+                                    </label>
+                                    <input type="email" name="email" required x-model="email" class="w-full px-3 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] text-sm" placeholder="buyer@domain.com">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                                        Phone / WhatsApp <span class="text-rose-600">*</span>
+                                    </label>
+                                    <input type="text" name="phone" required x-model="phone" class="w-full px-3 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] text-sm" placeholder="+1 555 019 2831">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                                        Destination Country <span class="text-rose-600">*</span>
+                                    </label>
+                                    <input type="text" name="country" required x-model="country" class="w-full px-3 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] text-sm" placeholder="e.g. United Arab Emirates">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                                        Discharge Port / Delivery Port
+                                    </label>
+                                    <input type="text" name="port_of_destination" x-model="port" class="w-full px-3 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] text-sm" placeholder="e.g. Jebel Ali, Rotterdam, Chittagong">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                                        Packaging Preferences
+                                    </label>
+                                    <input type="text" name="packaging_requirements" x-model="packaging" class="w-full px-3 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] text-sm" placeholder="e.g. 25kg PP bags, 1000kg Big Bags">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                                    Additional Requirements / Sampling Notes
+                                </label>
+                                <textarea name="message" rows="2" x-model="message" class="w-full px-3 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-[#9C451B] text-sm" placeholder="Specify CIF/FOB delivery terms, target shipment date, inspection requirements..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="pt-3 border-t border-stone-200 flex items-center justify-end gap-3">
+                            <button type="button" @click="closeModal()" class="px-5 py-2.5 rounded-lg border border-stone-300 text-stone-700 hover:bg-stone-50 font-medium text-xs">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                    :disabled="isSubmitting" 
+                                    class="px-7 py-2.5 rounded-lg bg-[#091433] hover:bg-[#394F3D] text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span x-show="!isSubmitting">Submit Formal Quotation Request &rarr;</span>
+                                <span x-show="isSubmitting" class="inline-flex items-center gap-2">
+                                    <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    Processing RFQ...
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

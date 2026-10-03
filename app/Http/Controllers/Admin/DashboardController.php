@@ -26,7 +26,7 @@ class DashboardController extends Controller
             'responded_inquiries' => Inquiry::where('status', Inquiry::STATUS_RESPONDED)->count(),
         ];
 
-        $recentInquiries = Inquiry::with('product')->latest()->take(6)->get();
+        $recentInquiries = Inquiry::with(['items.product', 'product'])->latest()->take(6)->get();
         $recentAuditLogs = AuditLog::with('user')->latest()->take(8)->get();
 
         return view('admin.dashboard', compact('metrics', 'recentInquiries', 'recentAuditLogs'));

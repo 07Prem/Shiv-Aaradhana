@@ -95,12 +95,20 @@ class ProductController extends Controller
         // Save specifications/attributes if provided
         if ($request->has('attributes') && is_array($request->input('attributes'))) {
             foreach ($request->input('attributes') as $defId => $val) {
-                if (filled($val)) {
+                $val = is_string($val) ? trim($val) : $val;
+                if ($val !== null && $val !== '') {
+                    $parsedNumber = null;
+                    if (is_numeric($val)) {
+                        $parsedNumber = (float) $val;
+                    } elseif (preg_match('/^[-+]?[0-9]*\.?[0-9]+/', (string) $val, $matches)) {
+                        $parsedNumber = (float) $matches[0];
+                    }
+
                     ProductAttributeValue::create([
                         'product_id' => $product->id,
                         'attribute_definition_id' => $defId,
-                        'text_value' => is_numeric($val) ? null : $val,
-                        'number_value' => is_numeric($val) ? (float) $val : null,
+                        'text_value' => (string) $val,
+                        'number_value' => $parsedNumber,
                     ]);
                 }
             }
@@ -116,14 +124,21 @@ class ProductController extends Controller
         $categories = Category::active()->with('productTypes')->orderBy('name')->get();
         $productTypes = ProductType::where('category_id', $product->category_id)->orderBy('name')->get();
         $attributeDefinitions = AttributeDefinition::orderBy('sort_order')->get();
-        $existingValues = $product->attributeValues->pluck('text_value', 'attribute_definition_id')->toArray();
-        $existingNumValues = $product->attributeValues->pluck('number_value', 'attribute_definition_id')->toArray();
+        
+        $attributeValues = $product->attributeValues->keyBy('attribute_definition_id');
+        $existingValues = [];
+        $existingNumValues = [];
+        foreach ($product->attributeValues as $val) {
+            $existingValues[$val->attribute_definition_id] = $val->input_value;
+            $existingNumValues[$val->attribute_definition_id] = $val->number_value;
+        }
 
         return view('admin.products.edit', compact(
             'product',
             'categories',
             'productTypes',
             'attributeDefinitions',
+            'attributeValues',
             'existingValues',
             'existingNumValues'
         ));
@@ -147,6 +162,8 @@ class ProductController extends Controller
             'minimum_order_qty' => ['nullable', 'string', 'max:120'],
             'packaging_options' => ['nullable', 'string', 'max:255'],
             'primary_image' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
+            'attributes' => ['nullable', 'array'],
+            'attributes.*' => ['nullable'],
         ]);
 
         $validated['is_featured'] = $request->boolean('is_featured');
@@ -155,7 +172,7 @@ class ProductController extends Controller
         }
 
         $imageFile = $request->file('primary_image');
-        unset($validated['primary_image']);
+        unset($validated['primary_image'], $validated['attributes']);
 
         $product->update($validated);
 
@@ -166,12 +183,20 @@ class ProductController extends Controller
         // Update specifications/attributes
         if ($request->has('attributes') && is_array($request->input('attributes'))) {
             foreach ($request->input('attributes') as $defId => $val) {
-                if (filled($val)) {
+                $val = is_string($val) ? trim($val) : $val;
+                if ($val !== null && $val !== '') {
+                    $parsedNumber = null;
+                    if (is_numeric($val)) {
+                        $parsedNumber = (float) $val;
+                    } elseif (preg_match('/^[-+]?[0-9]*\.?[0-9]+/', (string) $val, $matches)) {
+                        $parsedNumber = (float) $matches[0];
+                    }
+
                     ProductAttributeValue::updateOrCreate(
                         ['product_id' => $product->id, 'attribute_definition_id' => $defId],
                         [
-                            'text_value' => is_numeric($val) ? null : $val,
-                            'number_value' => is_numeric($val) ? (float) $val : null,
+                            'text_value' => (string) $val,
+                            'number_value' => $parsedNumber,
                         ]
                     );
                 } else {

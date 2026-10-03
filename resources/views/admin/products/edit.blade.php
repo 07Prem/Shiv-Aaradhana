@@ -106,14 +106,25 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 @foreach($attributeDefinitions as $attr)
-                @php 
-                    $currentVal = $existingValues[$attr->id] ?? ($existingNumValues[$attr->id] ? (string)(float)$existingNumValues[$attr->id] : ''); 
+                @php
+                    $valModel = isset($attributeValues) ? $attributeValues->get($attr->id) : null;
+                    $rawVal = $valModel?->input_value ?? ($existingValues[$attr->id] ?? null);
+                    if ($rawVal === null && isset($existingNumValues[$attr->id]) && $existingNumValues[$attr->id] !== null && $existingNumValues[$attr->id] !== '') {
+                        $numStr = (string)$existingNumValues[$attr->id];
+                        $rawVal = str_contains($numStr, '.') ? (rtrim(rtrim($numStr, '0'), '.') ?: '0') : $numStr;
+                    }
+                    $currentVal = $rawVal ?? '';
                 @endphp
                 <div>
                     <label class="block text-xs font-bold text-stone-700 mb-1">
                         {{ $attr->name }} {{ $attr->unit ? '(' . $attr->unit . ')' : '' }}
                     </label>
-                    <input type="text" name="attributes[{{ $attr->id }}]" value="{{ old('attributes.' . $attr->id, $currentVal) }}" class="w-full px-3 py-2 rounded-lg border border-stone-300 text-sm bg-white">
+                    <input
+                        type="text"
+                        name="attributes[{{ $attr->id }}]"
+                        value="{{ old('attributes.' . $attr->id, $currentVal) }}"
+                        class="w-full px-3 py-2 rounded-lg border border-stone-300 text-sm bg-white"
+                    >
                 </div>
                 @endforeach
             </div>

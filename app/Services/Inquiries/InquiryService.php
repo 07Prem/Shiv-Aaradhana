@@ -19,40 +19,99 @@ class InquiryService
      */
     public function createInquiry(array $data, ?string $ip = null, ?string $userAgent = null): Inquiry
     {
-        return DB::transaction(function () use ($data, $ip, $userAgent) {
-            // Generate unique reference number: SA-2026-XXXXX
+        $inquiry = DB::transaction(function () use ($data, $ip, $userAgent) {
+            // Generate unique reference number: SA-YYYY-XXXXXX
             $refNumber = 'SA-' . date('Y') . '-' . strtoupper(Str::random(6));
+
+            // Determine line items
+            $itemsData = [];
+            if (! empty($data['items']) && is_array($data['items'])) {
+                $itemsData = $data['items'];
+            } elseif (! empty($data['product_id'])) {
+                $itemsData[] = [
+                    'product_id' => $data['product_id'],
+                    'quantity' => $data['target_quantity'] ?? '1 Standard Consignment',
+                    'notes' => $data['packaging_requirements'] ?? null,
+                ];
+            }
+
+            // Primary product ID for backward compatibility
+            $primaryProductId = $data['product_id'] ?? (! empty($itemsData[0]['product_id']) ? $itemsData[0]['product_id'] : null);
+            $targetQuantity = $data['target_quantity'] ?? null;
+            if (empty($targetQuantity) && ! empty($itemsData)) {
+                $qtyParts = [];
+                foreach ($itemsData as $item) {
+                    if (! empty($item['quantity'])) {
+                        $qtyParts[] = $item['quantity'];
+                    }
+                }
+                $targetQuantity = ! empty($qtyParts) ? implode(', ', array_slice($qtyParts, 0, 3)) : null;
+            }
 
             $inquiry = Inquiry::create([
                 'reference_no' => $refNumber,
-                'inquiry_type' => $data['inquiry_type'] ?? Inquiry::TYPE_GENERAL,
-                'product_id' => $data['product_id'] ?? null,
+                'inquiry_type' => $data['inquiry_type'] ?? (count($itemsData) > 0 ? Inquiry::TYPE_QUOTE : Inquiry::TYPE_GENERAL),
+                'product_id' => $primaryProductId,
                 'full_name' => $data['full_name'],
                 'company_name' => $data['company_name'] ?? null,
                 'email' => $data['email'],
                 'phone' => $data['phone'],
                 'country' => $data['country'],
-                'target_quantity' => $data['target_quantity'] ?? null,
+                'target_quantity' => $targetQuantity,
                 'packaging_requirements' => $data['packaging_requirements'] ?? null,
                 'port_of_destination' => $data['port_of_destination'] ?? null,
                 'subject' => $data['subject'] ?? null,
-                'message' => $data['message'],
+                'message' => $data['message'] ?? 'Quotation requested via online RFQ system.',
                 'status' => Inquiry::STATUS_NEW,
                 'ip_address' => $ip,
                 'user_agent' => $userAgent,
             ]);
 
+            // Persist each line item with authoritative product details from database
+            foreach ($itemsData as $item) {
+                $prod = null;
+                if (! empty($item['product_id'])) {
+                    $prod = \App\Models\Product::find($item['product_id']);
+                }
+
+                \App\Models\InquiryItem::create([
+                    'inquiry_id' => $inquiry->id,
+                    'product_id' => $prod?->id,
+                    'product_name' => $prod?->name ?? ($item['product_name'] ?? 'Custom Product Request'),
+                    'product_slug' => $prod?->slug,
+                    'hs_code' => $prod?->hs_code,
+                    'quantity' => $item['quantity'] ?? '1 Consignment',
+                    'notes' => $item['notes'] ?? null,
+                ]);
+            }
+
+            $productCount = count($itemsData);
+            $summaryNote = $productCount > 0 
+                ? "Quotation inquiry received with {$productCount} product line item(s). Reference #{$inquiry->reference_no}"
+                : "General trade inquiry received with Reference #{$inquiry->reference_no}";
+
             InquiryActivity::create([
                 'inquiry_id' => $inquiry->id,
                 'action' => 'inquiry_created',
-                'notes' => "Inquiry received and registered with Reference #{$inquiry->reference_no}",
+                'notes' => $summaryNote,
             ]);
-
-            // Dispatch background queued notification job
-            dispatch(new SendInquiryNotificationJob($inquiry));
 
             return $inquiry;
         });
+
+        // Clear session RFQ items if present
+        if (session()->has('rfq_items')) {
+            session()->forget('rfq_items');
+        }
+
+        // Dispatch notification safely outside the database transaction
+        try {
+            dispatch(new SendInquiryNotificationJob($inquiry));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Notification dispatch failed for inquiry #{$inquiry->reference_no}: " . $e->getMessage());
+        }
+
+        return $inquiry->load(['items.product', 'product', 'activities']);
     }
 
     /**
@@ -100,7 +159,7 @@ class InquiryService
      */
     public function listInquiries(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Inquiry::query()->with(['product', 'activities'])->latest();
+        $query = Inquiry::query()->with(['items.product', 'product', 'activities'])->latest();
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -117,7 +176,16 @@ class InquiryService
                   ->orWhere('full_name', 'like', "%{$term}%")
                   ->orWhere('company_name', 'like', "%{$term}%")
                   ->orWhere('email', 'like', "%{$term}%")
-                  ->orWhere('country', 'like', "%{$term}%");
+                  ->orWhere('phone', 'like', "%{$term}%")
+                  ->orWhere('country', 'like', "%{$term}%")
+                  ->orWhere('message', 'like', "%{$term}%")
+                  ->orWhereHas('items', function ($itemQ) use ($term) {
+                      $itemQ->where('product_name', 'like', "%{$term}%")
+                            ->orWhere('hs_code', 'like', "%{$term}%");
+                  })
+                  ->orWhereHas('product', function ($prodQ) use ($term) {
+                      $prodQ->where('name', 'like', "%{$term}%");
+                  });
             });
         }
 

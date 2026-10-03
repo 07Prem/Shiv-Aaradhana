@@ -155,13 +155,18 @@
                 </div>
 
                 <!-- Action Links -->
-                <div class="p-6 pt-0 flex items-center justify-between border-t border-stone-100 mt-4">
-                    <a href="{{ route('catalog.product', $product->slug) }}" class="text-xs font-bold text-[#091433] hover:text-[#9C451B] transition-colors">
-                        Full Specifications &rarr;
+                <div class="p-6 pt-0 flex items-center justify-between border-t border-stone-100 mt-4 gap-2">
+                    <a href="{{ route('catalog.product', $product->slug) }}" class="text-xs font-bold text-[#091433] hover:text-[#9C451B] transition-colors truncate">
+                        Full Specs &rarr;
                     </a>
-                    <button @click="triggerQuote('{{ $product->id }}', '{{ addslashes($product->name) }}')" class="px-3.5 py-1.5 rounded-lg bg-[#9C451B] hover:bg-[#b85322] text-white text-xs font-semibold shadow transition-colors">
-                        Request Quote
-                    </button>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button @click="addProduct('{{ $product->id }}', '{{ addslashes($product->name) }}', '{{ $product->hs_code }}', 1)" title="Add to RFQ List" class="p-1.5 rounded-lg border border-stone-200 text-stone-600 hover:text-[#9C451B] hover:border-[#9C451B] transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+                        <button @click="triggerQuote('{{ $product->id }}', '{{ addslashes($product->name) }}', '{{ $product->hs_code }}')" class="px-3 py-1.5 rounded-lg bg-[#9C451B] hover:bg-[#b85322] text-white text-xs font-semibold shadow transition-colors">
+                            Request Quote
+                        </button>
+                    </div>
                 </div>
             </div>
             @endforeach

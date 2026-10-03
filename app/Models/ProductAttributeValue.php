@@ -38,6 +38,36 @@ class ProductAttributeValue extends Model
         return $this->belongsTo(AttributeDefinition::class);
     }
 
+    /**
+     * Get the raw/input value for form editing and administration.
+     * Preserves exact text formatting, decimal precision (e.g. '12.50'), and zero values ('0').
+     */
+    public function getInputValueAttribute(): string
+    {
+        if ($this->text_value !== null && $this->text_value !== '') {
+            return (string) $this->text_value;
+        }
+
+        if ($this->number_value !== null) {
+            $numStr = (string) $this->number_value;
+            if (str_contains($numStr, '.')) {
+                $trimmed = rtrim(rtrim($numStr, '0'), '.');
+                return $trimmed === '' ? '0' : $trimmed;
+            }
+            return $numStr;
+        }
+
+        if ($this->boolean_value !== null) {
+            return $this->boolean_value ? '1' : '0';
+        }
+
+        if (! empty($this->json_value)) {
+            return is_array($this->json_value) ? implode(', ', $this->json_value) : (string) $this->json_value;
+        }
+
+        return '';
+    }
+
     public function getFormattedValueAttribute(): string
     {
         $def = $this->attributeDefinition;
@@ -46,18 +76,28 @@ class ProductAttributeValue extends Model
         }
 
         $val = '';
-        if ($def->type === 'number') {
-            $val = (string) (float) $this->number_value;
-        } elseif ($def->type === 'boolean') {
+        if ($this->text_value !== null && $this->text_value !== '') {
+            $val = (string) $this->text_value;
+        } elseif ($this->number_value !== null) {
+            $numStr = (string) $this->number_value;
+            if (str_contains($numStr, '.')) {
+                $trimmed = rtrim(rtrim($numStr, '0'), '.');
+                $val = $trimmed === '' ? '0' : $trimmed;
+            } else {
+                $val = $numStr;
+            }
+        } elseif ($def->type === 'boolean' || $this->boolean_value !== null) {
             $val = $this->boolean_value ? 'Yes' : 'No';
         } elseif ($def->type === 'multiselect' && is_array($this->json_value)) {
             $val = implode(', ', $this->json_value);
-        } else {
-            $val = (string) $this->text_value;
         }
 
         if ($def->unit && filled($val)) {
-            $val .= ' ' . $def->unit;
+            $unit = trim($def->unit);
+            // Append unit only if the formatted string does not already end with or contain it
+            if (! str_ends_with($val, $unit) && ! str_contains($val, $unit)) {
+                $val .= ' ' . $unit;
+            }
         }
 
         return $val;

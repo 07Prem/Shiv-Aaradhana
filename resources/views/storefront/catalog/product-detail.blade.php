@@ -112,9 +112,13 @@
                 @endif
 
                 <!-- CTA triggers -->
-                <div class="pt-2 flex flex-wrap gap-4">
-                    <button @click="triggerQuote('{{ $product->id }}', '{{ addslashes($product->name) }}')" class="flex-1 min-w-[200px] px-6 py-3.5 rounded-lg bg-[#9C451B] hover:bg-[#b85322] text-white font-bold text-sm shadow-md transition-colors text-center">
-                        Request a Quote for this Product &rarr;
+                <div class="pt-2 flex flex-wrap gap-3">
+                    <button @click="triggerQuote('{{ $product->id }}', '{{ addslashes($product->name) }}', '{{ $product->hs_code }}')" class="flex-1 min-w-[200px] px-6 py-3.5 rounded-lg bg-[#9C451B] hover:bg-[#b85322] text-white font-bold text-sm shadow-md transition-colors text-center inline-flex items-center justify-center gap-2">
+                        <span>Request a Quote for this Product &rarr;</span>
+                    </button>
+                    <button @click="addProduct('{{ $product->id }}', '{{ addslashes($product->name) }}', '{{ $product->hs_code }}', 1)" class="px-5 py-3.5 rounded-lg border-2 border-[#091433] text-[#091433] hover:bg-[#091433] hover:text-white font-bold text-sm transition-colors inline-flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span>Add to RFQ List</span>
                     </button>
                     <a href="https://wa.me/918487878721?text=Hello%20Shiv%20Aaradhana,%20I%20am%20inquiring%20about%20{{ urlencode($product->name) }}" target="_blank" rel="noopener" class="px-5 py-3.5 rounded-lg bg-[#394F3D] hover:bg-[#4a664f] text-white font-medium text-sm transition-colors inline-flex items-center gap-2">
                         <span>WhatsApp Desk</span>
@@ -170,7 +174,7 @@
         </div>
 
         <!-- In-Page Quotation Form -->
-        <div class="mt-16 p-8 sm:p-10 rounded-2xl bg-[#FAF5ED] border border-[#EBD6B4] max-w-4xl shadow-sm">
+        <div class="mt-16 p-8 sm:p-10 rounded-2xl bg-[#FAF5ED] border border-[#EBD6B4] max-w-4xl shadow-sm" x-data="{ submitting: false }">
             <div class="mb-6 space-y-1">
                 <span class="text-xs font-bold uppercase tracking-widest text-[#9C451B]">Instant Request</span>
                 <h3 class="text-xl sm:text-2xl font-heading font-bold text-[#091433]">
@@ -181,7 +185,7 @@
                 </p>
             </div>
 
-            <form action="{{ route('inquiry.quote') }}" method="POST" class="space-y-4">
+            <form action="{{ route('inquiry.quote') }}" method="POST" class="space-y-4" @submit="if(submitting) return false; submitting = true;">
                 @csrf
                 <input type="hidden" name="product_id" value="{{ $product->id }}">
                 <input type="text" name="website_hp" value="" style="display:none !important;" tabindex="-1" autocomplete="off">
@@ -228,8 +232,9 @@
                     <textarea name="message" rows="3" required placeholder="Specify packaging (e.g. 25kg PP bags), desired FOB/CIF basis, target delivery month..." class="w-full px-3 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]"></textarea>
                 </div>
 
-                <button type="submit" class="px-8 py-3 rounded-lg bg-[#091433] hover:bg-[#394F3D] text-white font-bold text-sm shadow-md transition-colors">
-                    Send Formal Quotation Request &rarr;
+                <button type="submit" :disabled="submitting" class="px-8 py-3 rounded-lg bg-[#091433] hover:bg-[#394F3D] text-white font-bold text-sm shadow-md transition-colors disabled:opacity-50">
+                    <span x-show="!submitting">Send Formal Quotation Request &rarr;</span>
+                    <span x-show="submitting">Processing Quotation...</span>
                 </button>
             </form>
         </div>

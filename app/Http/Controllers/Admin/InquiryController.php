@@ -23,7 +23,7 @@ class InquiryController extends Controller
         $filters = [
             'status' => $request->input('status'),
             'type' => $request->input('type'),
-            'q' => $request->input('q'),
+            'q' => $request->input('q', $request->input('search')),
         ];
 
         $inquiries = $this->inquiryService->listInquiries($filters, 15);
@@ -33,6 +33,8 @@ class InquiryController extends Controller
             'new' => Inquiry::where('status', Inquiry::STATUS_NEW)->count(),
             'in_progress' => Inquiry::where('status', Inquiry::STATUS_IN_PROGRESS)->count(),
             'responded' => Inquiry::where('status', Inquiry::STATUS_RESPONDED)->count(),
+            'accepted' => Inquiry::where('status', Inquiry::STATUS_ACCEPTED)->count(),
+            'rejected' => Inquiry::where('status', Inquiry::STATUS_REJECTED)->count(),
             'closed' => Inquiry::where('status', Inquiry::STATUS_CLOSED)->count(),
         ];
 
@@ -41,7 +43,7 @@ class InquiryController extends Controller
 
     public function show(Inquiry $inquiry): View
     {
-        $inquiry->load(['product.category', 'activities.user']);
+        $inquiry->load(['items.product.category', 'product.category', 'activities.user']);
 
         return view('admin.inquiries.show', compact('inquiry'));
     }
@@ -53,6 +55,8 @@ class InquiryController extends Controller
                 Inquiry::STATUS_NEW,
                 Inquiry::STATUS_IN_PROGRESS,
                 Inquiry::STATUS_RESPONDED,
+                Inquiry::STATUS_ACCEPTED,
+                Inquiry::STATUS_REJECTED,
                 Inquiry::STATUS_CLOSED,
                 Inquiry::STATUS_SPAM,
             ])],
@@ -109,8 +113,12 @@ class InquiryController extends Controller
                 'Received At',
             ]);
 
-            Inquiry::with('product')->chunk(100, function ($batch) use ($handle) {
+            Inquiry::with(['items', 'product'])->chunk(100, function ($batch) use ($handle) {
                 foreach ($batch as $inq) {
+                    $productsStr = $inq->items->count() > 0 
+                        ? $inq->items->map(fn($it) => "{$it->product_name} ({$it->quantity})")->implode('; ')
+                        : ($inq->product?->name ?? 'General Inquiry');
+
                     fputcsv($handle, [
                         $inq->reference_no,
                         $inq->inquiry_type,
@@ -119,7 +127,7 @@ class InquiryController extends Controller
                         $inq->email,
                         $inq->phone,
                         $inq->country,
-                        $inq->product?->name ?? 'General Inquiry',
+                        $productsStr,
                         $inq->target_quantity ?? '',
                         $inq->packaging_requirements ?? '',
                         $inq->port_of_destination ?? '',

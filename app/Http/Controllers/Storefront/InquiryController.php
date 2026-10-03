@@ -55,20 +55,25 @@ class InquiryController extends Controller
             $request->userAgent()
         );
 
-        $message = "Your formal quotation request for {$inquiry->product?->name} has been received under Reference #{$inquiry->reference_no}. Our export team will prepare FOB/CIF rate indications and specifications.";
+        $productLabel = $inquiry->items->count() > 1 
+            ? "{$inquiry->items->count()} commodities"
+            : ($inquiry->items->first()?->product_name ?? ($inquiry->product?->name ?? 'selected commodities'));
+
+        $message = "Your formal quotation request for {$productLabel} has been registered under Reference #{$inquiry->reference_no}. Our international trade team will prepare FOB/CIF rate indications and specifications promptly.";
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => $message,
                 'reference_no' => $inquiry->reference_no,
+                'items_count' => $inquiry->items->count(),
             ]);
         }
 
         return redirect()->back()->with('success_quote', [
             'reference_no' => $inquiry->reference_no,
             'message' => $message,
-            'product_name' => $inquiry->product?->name,
+            'product_name' => $productLabel,
         ]);
     }
 }

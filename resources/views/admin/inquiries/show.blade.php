@@ -6,7 +6,7 @@
 @section('content')
 
 <div class="mb-4">
-    <a href="{{ route('admin.inquiries.index') }}" class="text-xs text-[#9C451B] font-bold hover:underline">
+    <a href="{{ route('admin.inquiries.index') }}" class="text-xs text-[#9C451B] font-bold hover:underline inline-flex items-center gap-1">
         &larr; Back to Inquiries List
     </a>
 </div>
@@ -59,8 +59,63 @@
                 </div>
             </div>
 
-            <!-- Quotation Parameters -->
-            @if($inquiry->inquiry_type === 'quote' || $inquiry->product)
+            <!-- Quotation Line Items Table -->
+            @if($inquiry->items->count() > 0)
+            <div class="border-t border-stone-100 pt-5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#091433]">
+                        Requested Commodities &amp; Products ({{ $inquiry->items->count() }} Line Items)
+                    </h4>
+                </div>
+
+                <div class="border border-stone-200 rounded-xl overflow-hidden shadow-sm">
+                    <table class="w-full text-xs text-left">
+                        <thead>
+                            <tr class="bg-stone-50 text-stone-500 uppercase tracking-wider text-[10px] border-b border-stone-200">
+                                <th class="py-2.5 px-3">#</th>
+                                <th class="py-2.5 px-3">Product Name</th>
+                                <th class="py-2.5 px-3">HS Code</th>
+                                <th class="py-2.5 px-3">Target Quantity</th>
+                                <th class="py-2.5 px-3">Line Notes / Specs</th>
+                                <th class="py-2.5 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stone-100">
+                            @foreach($inquiry->items as $idx => $item)
+                            <tr class="hover:bg-stone-50 transition-colors">
+                                <td class="py-3 px-3 font-mono text-stone-400">{{ $idx + 1 }}</td>
+                                <td class="py-3 px-3">
+                                    <span class="font-bold text-stone-900 block text-xs">{{ $item->product_name }}</span>
+                                    @if($item->product?->category)
+                                        <span class="text-[10px] text-stone-500">{{ $item->product->category->name }}</span>
+                                    @endif
+                                </td>
+                                <td class="py-3 px-3 font-mono text-stone-600">
+                                    {{ $item->hs_code ?? ($item->product?->hs_code ?? 'N/A') }}
+                                </td>
+                                <td class="py-3 px-3 font-semibold text-stone-900">
+                                    {{ $item->quantity }}
+                                </td>
+                                <td class="py-3 px-3 text-stone-600">
+                                    {{ $item->notes ?? 'Standard Specifications' }}
+                                </td>
+                                <td class="py-3 px-3 text-right">
+                                    @if($item->product)
+                                        <a href="{{ route('admin.products.edit', $item->product->id) }}" class="text-[11px] text-[#9C451B] font-semibold hover:underline">
+                                            Edit Product &rarr;
+                                        </a>
+                                    @else
+                                        <span class="text-stone-400 text-[11px]">Unlinked</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @elseif($inquiry->inquiry_type === 'quote' || $inquiry->product)
+            <!-- Single product fallback for legacy inquiries -->
             <div class="border-t border-stone-100 pt-4">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-[#091433] mb-3">Commodity & Shipment Criteria</h4>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
@@ -92,9 +147,25 @@
             </div>
             @endif
 
+            <!-- Shipping & Packaging Summary -->
+            <div class="border-t border-stone-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200">
+                    <span class="text-stone-400 uppercase font-bold text-[10px] block mb-1">Discharge Port / Destination</span>
+                    <span class="font-bold text-stone-900 text-sm block">
+                        {{ $inquiry->port_of_destination ?? 'Port unstated (Inquire with buyer)' }}
+                    </span>
+                </div>
+                <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200">
+                    <span class="text-stone-400 uppercase font-bold text-[10px] block mb-1">Packaging Preference</span>
+                    <span class="font-bold text-stone-900 text-sm block">
+                        {{ $inquiry->packaging_requirements ?? 'Standard Export Packaging' }}
+                    </span>
+                </div>
+            </div>
+
             <!-- Inquiry Body / Message -->
             <div class="border-t border-stone-100 pt-4">
-                <span class="text-xs font-bold uppercase tracking-wider text-[#091433] block mb-2">Message & Inquired Specifications:</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-[#091433] block mb-2">Buyer Message & Technical Requirements:</span>
                 <div class="p-5 rounded-xl bg-stone-50 border border-stone-200 text-stone-800 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans">
 {{ $inquiry->message }}
                 </div>
@@ -104,6 +175,7 @@
             <div class="text-[11px] text-stone-400 pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-stone-100">
                 <span>Received: {{ $inquiry->created_at->format('d M Y, H:i:s') }} UTC</span>
                 <span>IP Address: {{ $inquiry->ip_address ?? 'Recorded' }}</span>
+                <span>User Agent: {{ Str::limit($inquiry->user_agent ?? 'Browser', 60) }}</span>
             </div>
         </div>
 
@@ -145,7 +217,7 @@
         
         <!-- Status Updater -->
         <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-4">
-            <h4 class="font-heading font-bold text-base text-[#091433]">Inquiry Status</h4>
+            <h4 class="font-heading font-bold text-base text-[#091433]">Lifecycle Status</h4>
             
             <form action="{{ route('admin.inquiries.update_status', $inquiry->id) }}" method="POST" class="space-y-4">
                 @csrf
@@ -155,14 +227,16 @@
                         <option value="new" {{ $inquiry->status === 'new' ? 'selected' : '' }}>New (Awaiting Review)</option>
                         <option value="in_progress" {{ $inquiry->status === 'in_progress' ? 'selected' : '' }}>In Progress (Under Evaluation)</option>
                         <option value="responded" {{ $inquiry->status === 'responded' ? 'selected' : '' }}>Responded (Quotation Sent)</option>
-                        <option value="closed" {{ $inquiry->status === 'closed' ? 'selected' : '' }}>Closed (Completed/Archived)</option>
+                        <option value="accepted" {{ $inquiry->status === 'accepted' ? 'selected' : '' }}>Accepted (Deal Confirmed)</option>
+                        <option value="rejected" {{ $inquiry->status === 'rejected' ? 'selected' : '' }}>Rejected (Declined)</option>
+                        <option value="closed" {{ $inquiry->status === 'closed' ? 'selected' : '' }}>Closed (Archived)</option>
                         <option value="spam" {{ $inquiry->status === 'spam' ? 'selected' : '' }}>Spam (Disqualified)</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">Status Note (Optional)</label>
-                    <input type="text" name="status_note" placeholder="e.g. Rate sent to buyer" class="w-full px-3 py-2 rounded-lg border border-stone-300 text-xs">
+                    <input type="text" name="status_note" placeholder="e.g. Sent CIF pricing to buyer" class="w-full px-3 py-2 rounded-lg border border-stone-300 text-xs">
                 </div>
 
                 <button type="submit" class="w-full py-2.5 rounded-lg bg-[#091433] hover:bg-[#394F3D] text-white text-xs font-bold transition-colors">

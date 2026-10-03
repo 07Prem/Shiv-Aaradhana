@@ -45,6 +45,13 @@ Route::post('/inquiries/quote', [InquiryController::class, 'storeQuote'])
     ->middleware('throttle:10,1')
     ->name('inquiry.quote');
 
+// RFQ Quotation List Management Routes
+Route::get('/rfq/items', [\App\Http\Controllers\Storefront\RfqCartController::class, 'index'])->name('rfq.index');
+Route::post('/rfq/items', [\App\Http\Controllers\Storefront\RfqCartController::class, 'store'])->name('rfq.store');
+Route::patch('/rfq/items/{productId}', [\App\Http\Controllers\Storefront\RfqCartController::class, 'update'])->name('rfq.update');
+Route::delete('/rfq/items/{productId}', [\App\Http\Controllers\Storefront\RfqCartController::class, 'destroy'])->name('rfq.destroy');
+Route::delete('/rfq/items', [\App\Http\Controllers\Storefront\RfqCartController::class, 'clear'])->name('rfq.clear');
+
 Route::get('/privacy-policy', [LegalController::class, 'privacy'])->name('legal.privacy');
 Route::get('/terms-of-trade', [LegalController::class, 'terms'])->name('legal.terms');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
