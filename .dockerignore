@@ -1,0 +1,11 @@
+.git
+.github
+.env
+.env.*
+node_modules
+vendor
+tests
+phpunit.xml
+.phpunit.result.cache
+*.md
+*.py
