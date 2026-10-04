@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Admin Dashboard') — Shiv Aaradhana</title>
+    @if(!empty($branding['favicon']))
+        <link rel="icon" href="{{ $branding['favicon'] }}">
+    @else
+        <link rel="icon" href="/favicon.ico">
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-stone-100 text-stone-800 antialiased font-sans">
@@ -15,13 +20,17 @@
                 <!-- Brand Header -->
                 <div class="p-6 border-b border-stone-800 flex items-center justify-between">
                     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-lg bg-[#394F3D] border border-[#EBD6B4]/40 flex items-center justify-center font-heading font-bold text-[#EBD6B4]">
-                            SA
-                        </div>
-                        <div>
-                            <span class="font-heading font-bold text-white text-sm block">Shiv Aaradhana</span>
-                            <span class="text-[10px] tracking-wider uppercase text-[#EBD6B4] block font-semibold">Admin Suite</span>
-                        </div>
+                        @if(!empty($branding['light_logo']) || !empty($branding['main_logo']))
+                            <img src="{{ $branding['light_logo'] ?? $branding['main_logo'] }}" alt="Shiv Aaradhana" class="h-9 w-auto max-w-[140px] object-contain">
+                        @else
+                            <div class="w-9 h-9 rounded-lg bg-[#394F3D] border border-[#EBD6B4]/40 flex items-center justify-center font-heading font-bold text-[#EBD6B4]">
+                                SA
+                            </div>
+                            <div>
+                                <span class="font-heading font-bold text-white text-sm block">Shiv Aaradhana</span>
+                                <span class="text-[10px] tracking-wider uppercase text-[#EBD6B4] block font-semibold">Admin Suite</span>
+                            </div>
+                        @endif
                     </a>
                 </div>
 
@@ -66,9 +75,14 @@
 
                     <div class="pt-4 pb-1 px-3 text-[10px] uppercase tracking-widest text-stone-400 font-bold">Content & Governance</div>
 
+                    <a href="{{ route('admin.branding.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {{ request()->routeIs('admin.branding*') ? 'bg-[#394F3D] text-white font-bold' : 'hover:bg-white/5 text-stone-300' }}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+                        <span>Branding &amp; Hero Settings</span>
+                    </a>
+
                     <a href="{{ route('admin.cms.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {{ request()->routeIs('admin.cms*') ? 'bg-[#394F3D] text-white font-bold' : 'hover:bg-white/5 text-stone-300' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                        <span>CMS Sections</span>
+                        <span>CMS Story Sections</span>
                     </a>
 
                     @if(auth()->user()?->isSuperAdmin())

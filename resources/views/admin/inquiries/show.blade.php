@@ -59,6 +59,19 @@
                 </div>
             </div>
 
+            <!-- Subject / Inquiry Topic -->
+            @if(!empty($inquiry->subject))
+            <div class="p-4 rounded-xl bg-[#FAF5ED] border border-[#EBD6B4] flex items-center justify-between gap-4">
+                <div>
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-[#9C451B] block">Inquiry Subject / Topic</span>
+                    <h4 class="text-sm font-bold text-[#091433] mt-0.5">{{ $inquiry->subject }}</h4>
+                </div>
+                <span class="px-2.5 py-1 rounded bg-white text-stone-600 text-xs font-medium border border-stone-200">
+                    {{ ucfirst($inquiry->inquiry_type) }} Lead
+                </span>
+            </div>
+            @endif
+
             <!-- Quotation Line Items Table -->
             @if($inquiry->items->count() > 0)
             <div class="border-t border-stone-100 pt-5 space-y-3">

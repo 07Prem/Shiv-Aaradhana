@@ -103,6 +103,22 @@
                         </p>
                     </div>
 
+                    <!-- Flash Success Notification -->
+                    @if(session('success_inquiry'))
+                    <div class="mb-6 p-6 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-3 shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">✓</span>
+                            <h4 class="font-heading font-bold text-base text-emerald-900">Trade Inquiry Registered Successfully</h4>
+                        </div>
+                        <div class="p-3 bg-white/90 rounded-xl border border-emerald-200 text-xs font-mono font-bold text-[#091433] inline-block">
+                            Reference: #{{ is_array(session('success_inquiry')) ? session('success_inquiry')['reference_no'] : session('success_inquiry') }}
+                        </div>
+                        <p class="text-xs text-emerald-800 leading-relaxed">
+                            {{ is_array(session('success_inquiry')) ? session('success_inquiry')['message'] : 'Your requirements have been recorded in our trade desk. An export desk manager will review and respond promptly.' }}
+                        </p>
+                    </div>
+                    @endif
+
                     @if($errors->any())
                     <div class="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs space-y-1">
                         <span class="font-bold block">Please correct the following errors:</span>
@@ -114,52 +130,127 @@
                     </div>
                     @endif
 
-                    <form action="{{ route('inquiry.general') }}" method="POST" class="space-y-4">
-                        @csrf
-                        <input type="text" name="website_hp" value="" style="display:none !important;" tabindex="-1" autocomplete="off">
+                    <!-- Interactive Form Container with Alpine Feedback -->
+                    <div x-data="{
+                        isSubmitting: false,
+                        successData: null,
+                        errorMessage: '',
+                        async submitForm(event) {
+                            this.isSubmitting = true;
+                            this.errorMessage = '';
+                            const form = event.target;
+                            const formData = new FormData(form);
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Full Name *</label>
-                                <input type="text" name="full_name" value="{{ old('full_name') }}" required class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Company / Importer Name</label>
-                                <input type="text" name="company_name" value="{{ old('company_name') }}" class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
-                            </div>
-                        </div>
+                            try {
+                                const response = await fetch(form.action, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    },
+                                    body: formData
+                                });
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Business Email *</label>
-                                <input type="email" name="email" value="{{ old('email') }}" required class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Phone / WhatsApp *</label>
-                                <input type="text" name="phone" value="{{ old('phone') }}" required class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Country *</label>
-                                <input type="text" name="country" value="{{ old('country') }}" required class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
-                            </div>
-                        </div>
+                                const data = await response.json();
 
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Subject / Product Interest</label>
-                            <input type="text" name="subject" value="{{ old('subject') }}" placeholder="e.g. Inquiring about Sortex Cumin & Sesame Seeds for European import" class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
-                        </div>
+                                if (response.ok && data.success) {
+                                    this.successData = data;
+                                    form.reset();
+                                } else {
+                                    if (data.errors) {
+                                        const firstErr = Object.values(data.errors)[0];
+                                        this.errorMessage = Array.isArray(firstErr) ? firstErr[0] : firstErr;
+                                    } else {
+                                        this.errorMessage = data.message || 'Submission could not be completed. Please check all required fields.';
+                                    }
+                                }
+                            } catch (e) {
+                                // Fallback to traditional POST submission if network/fetch fails
+                                form.submit();
+                            } finally {
+                                this.isSubmitting = false;
+                            }
+                        }
+                    }">
+                        <!-- Async Inline Success Card -->
+                        <template x-if="successData">
+                            <div class="mb-6 p-6 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-3 shadow-sm animate-fade-in">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">✓</span>
+                                    <h4 class="font-heading font-bold text-base text-emerald-900">Trade Inquiry Submitted Successfully</h4>
+                                </div>
+                                <div class="p-3 bg-white/90 rounded-xl border border-emerald-200 text-xs font-mono font-bold text-[#091433] inline-block">
+                                    Reference: #<span x-text="successData.reference_no"></span>
+                                </div>
+                                <p class="text-xs text-emerald-800 leading-relaxed" x-text="successData.message"></p>
+                                <button type="button" @click="successData = null" class="mt-2 text-xs font-bold text-emerald-900 underline">
+                                    Submit Another Inquiry &rarr;
+                                </button>
+                            </div>
+                        </template>
 
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Detailed Message *</label>
-                            <textarea name="message" rows="4" required placeholder="Describe requested volumes, quality specifications, packaging preferences, destination port, or sampling requests..." class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">{{ old('message') }}</textarea>
-                        </div>
+                        <!-- Async Inline Error Message -->
+                        <div x-show="errorMessage" class="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs" x-text="errorMessage"></div>
 
-                        <div class="pt-2">
-                            <button type="submit" class="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-[#091433] hover:bg-[#394F3D] text-white font-bold text-sm shadow-md transition-colors">
-                                Submit Trade Inquiry &rarr;
-                            </button>
-                        </div>
-                    </form>
+                        <form x-show="!successData" 
+                              action="{{ route('inquiry.general') }}" 
+                              method="POST" 
+                              @submit.prevent="submitForm($event)"
+                              class="space-y-4">
+                            @csrf
+                            <div style="display:none !important;" aria-hidden="true">
+                                <input type="text" name="website_hp" value="" tabindex="-1" autocomplete="new-password">
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Full Name *</label>
+                                    <input type="text" name="full_name" value="{{ old('full_name') }}" required class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Company / Importer Name</label>
+                                    <input type="text" name="company_name" value="{{ old('company_name') }}" class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Business Email *</label>
+                                    <input type="email" name="email" value="{{ old('email') }}" required class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Phone / WhatsApp *</label>
+                                    <input type="text" name="phone" value="{{ old('phone') }}" required class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Country *</label>
+                                    <input type="text" name="country" value="{{ old('country') }}" required class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Subject / Product Interest</label>
+                                <input type="text" name="subject" value="{{ old('subject') }}" placeholder="e.g. Inquiring about Sortex Cumin & Sesame Seeds for European import" class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Detailed Message *</label>
+                                <textarea name="message" rows="4" required placeholder="Describe requested volumes, quality specifications, packaging preferences, destination port, or sampling requests..." class="w-full px-3.5 py-2.5 rounded-lg border border-stone-300 bg-white text-sm focus:ring-2 focus:ring-[#9C451B]">{{ old('message') }}</textarea>
+                            </div>
+
+                            <div class="pt-2">
+                                <button type="submit" 
+                                        :disabled="isSubmitting" 
+                                        class="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-[#091433] hover:bg-[#394F3D] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+                                    <span x-show="!isSubmitting">Submit Trade Inquiry &rarr;</span>
+                                    <span x-show="isSubmitting" class="inline-flex items-center gap-2">
+                                        <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        Registering Inquiry...
+                                    </span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
 

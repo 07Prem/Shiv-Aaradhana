@@ -55,6 +55,7 @@ Route::delete('/rfq/items', [\App\Http\Controllers\Storefront\RfqCartController:
 Route::get('/privacy-policy', [LegalController::class, 'privacy'])->name('legal.privacy');
 Route::get('/terms-of-trade', [LegalController::class, 'terms'])->name('legal.terms');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
 Route::get('/health', [HealthCheckController::class, 'check'])->name('health');
 
 /*
@@ -97,6 +98,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('cms', [CmsController::class, 'index'])->name('cms.index');
             Route::get('cms/{cmsSection}/edit', [CmsController::class, 'edit'])->name('cms.edit');
             Route::put('cms/{cmsSection}', [CmsController::class, 'update'])->name('cms.update');
+        });
+
+        // Branding & Hero Management (Super Admin, Content Editor, Catalog Manager)
+        Route::middleware(EnsureAdminRole::class . ':super_admin,content_editor,catalog_manager')->group(function () {
+            Route::get('branding', [\App\Http\Controllers\Admin\BrandingController::class, 'index'])->name('branding.index');
+            Route::post('branding/logo', [\App\Http\Controllers\Admin\BrandingController::class, 'updateBranding'])->name('branding.logo.update');
+            Route::post('branding/hero', [\App\Http\Controllers\Admin\BrandingController::class, 'updateHero'])->name('branding.hero.update');
         });
 
         // Audit Logs (Super Admin only)

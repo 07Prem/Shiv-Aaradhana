@@ -159,7 +159,13 @@ class InquiryService
      */
     public function listInquiries(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Inquiry::query()->with(['items.product', 'product', 'activities'])->latest();
+        $query = Inquiry::query()->with(['items.product', 'product', 'activities']);
+
+        if (! empty($filters['sort']) && $filters['sort'] === 'oldest') {
+            $query->oldest();
+        } else {
+            $query->latest();
+        }
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -178,6 +184,7 @@ class InquiryService
                   ->orWhere('email', 'like', "%{$term}%")
                   ->orWhere('phone', 'like', "%{$term}%")
                   ->orWhere('country', 'like', "%{$term}%")
+                  ->orWhere('subject', 'like', "%{$term}%")
                   ->orWhere('message', 'like', "%{$term}%")
                   ->orWhereHas('items', function ($itemQ) use ($term) {
                       $itemQ->where('product_name', 'like', "%{$term}%")

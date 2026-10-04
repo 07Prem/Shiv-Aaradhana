@@ -16,6 +16,7 @@
     <table class="w-full text-xs text-left">
         <thead>
             <tr class="bg-stone-50 text-stone-500 uppercase tracking-wider border-b border-stone-200">
+                <th class="py-3 px-4">Image</th>
                 <th class="py-3 px-4">Category Name</th>
                 <th class="py-3 px-4">Slug</th>
                 <th class="py-3 px-4">Parent Category</th>
@@ -28,6 +29,13 @@
         <tbody class="divide-y divide-stone-100">
             @foreach($categories as $category)
             <tr class="hover:bg-stone-50 transition-colors">
+                <td class="py-3.5 px-4">
+                    @if($category->image_path)
+                        <img src="{{ $category->image_path }}" class="h-10 w-10 object-cover rounded border border-stone-200">
+                    @else
+                        <div class="h-10 w-10 bg-stone-100 rounded border border-stone-200 flex items-center justify-center text-[8px] text-stone-400 font-bold uppercase">No Img</div>
+                    @endif
+                </td>
                 <td class="py-3.5 px-4 font-bold text-[#091433]">
                     {{ $category->name }}
                 </td>

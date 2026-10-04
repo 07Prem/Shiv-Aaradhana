@@ -6,7 +6,7 @@
 @section('content')
 
 <div class="max-w-2xl bg-white p-8 rounded-2xl border border-stone-200 shadow-sm">
-    <form action="{{ route('admin.categories.store') }}" method="POST" class="space-y-4">
+    <form action="{{ route('admin.categories.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
         @csrf
 
         <div>
@@ -17,6 +17,11 @@
         <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Slug (Optional, auto-generated)</label>
             <input type="text" name="slug" value="{{ old('slug') }}" class="w-full px-3.5 py-2 rounded-lg border border-stone-300 text-sm focus:ring-2 focus:ring-[#9C451B]">
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Category Image</label>
+            <input type="file" name="image" accept="image/jpeg,image/png,image/webp" class="block w-full text-xs text-stone-500 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#091433] file:text-white hover:file:bg-[#394F3D] cursor-pointer">
         </div>
 
         <div>

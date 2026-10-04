@@ -23,6 +23,7 @@ class InquiryController extends Controller
         $filters = [
             'status' => $request->input('status'),
             'type' => $request->input('type'),
+            'sort' => $request->input('sort', 'latest'),
             'q' => $request->input('q', $request->input('search')),
         ];
 
@@ -30,6 +31,8 @@ class InquiryController extends Controller
 
         $counts = [
             'all' => Inquiry::count(),
+            'general' => Inquiry::where('inquiry_type', Inquiry::TYPE_GENERAL)->count(),
+            'quote' => Inquiry::where('inquiry_type', Inquiry::TYPE_QUOTE)->count(),
             'new' => Inquiry::where('status', Inquiry::STATUS_NEW)->count(),
             'in_progress' => Inquiry::where('status', Inquiry::STATUS_IN_PROGRESS)->count(),
             'responded' => Inquiry::where('status', Inquiry::STATUS_RESPONDED)->count(),

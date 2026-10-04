@@ -17,16 +17,23 @@ class User extends Authenticatable
     public const ROLE_CATALOG_MANAGER = 'catalog_manager';
     public const ROLE_INQUIRY_MANAGER = 'inquiry_manager';
     public const ROLE_CONTENT_EDITOR = 'content_editor';
+    public const ROLE_CUSTOMER = 'customer';
 
     /**
      * @var list<string>
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
+        'phone',
         'password',
+        'company_name',
+        'address',
         'role',
         'is_active',
+        'last_login',
+        'last_password_change',
     ];
 
     /**
@@ -46,6 +53,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'last_login' => 'datetime',
+            'last_password_change' => 'datetime',
         ];
     }
 
@@ -77,5 +86,10 @@ class User extends Authenticatable
     public function canEditContent(): bool
     {
         return in_array($this->role, [self::ROLE_SUPER_ADMIN, self::ROLE_CONTENT_EDITOR]);
+    }
+
+    public function isCustomer(): bool
+    {
+        return $this->role === self::ROLE_CUSTOMER;
     }
 }

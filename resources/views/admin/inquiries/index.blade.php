@@ -7,43 +7,79 @@
 
 <!-- Header & Export Action -->
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-    <p class="text-xs text-stone-500">Review, track, and respond to incoming quotation requests from overseas buyers.</p>
-    <a href="{{ route('admin.inquiries.export') }}" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors inline-flex items-center gap-2 shadow-sm">
+    <div>
+        <h2 class="text-sm font-semibold text-stone-700">Commercial Inquiries &amp; Quotation Leads</h2>
+        <p class="text-xs text-stone-500 mt-0.5">Review, filter, track, and respond to incoming buyer requirements from the storefront.</p>
+    </div>
+    <a href="{{ route('admin.inquiries.export') }}" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors inline-flex items-center gap-2 shadow-sm self-start sm:self-auto">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         <span>Export CSV Report</span>
     </a>
 </div>
 
-<!-- Search & Filter Bar -->
-<div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<!-- Type Filter Tabs -->
+<div class="bg-white p-3 rounded-2xl border border-stone-200 shadow-sm mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-2 text-xs font-medium">
+        <span class="text-stone-400 uppercase tracking-wider text-[10px] font-bold mr-1">Inquiry Type:</span>
+        <a href="{{ route('admin.inquiries.index', array_filter(['status' => $filters['status'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-3.5 py-1.5 rounded-lg font-bold transition-colors {{ empty($filters['type']) ? 'bg-[#091433] text-white shadow-sm' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+            All Leads ({{ $counts['all'] }})
+        </a>
+        <a href="{{ route('admin.inquiries.index', array_filter(['type' => 'general', 'status' => $filters['status'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-3.5 py-1.5 rounded-lg font-bold transition-colors {{ ($filters['type'] ?? '') === 'general' ? 'bg-[#394F3D] text-white shadow-sm' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+            ✉️ Contact &amp; Trade Inquiries ({{ $counts['general'] }})
+        </a>
+        <a href="{{ route('admin.inquiries.index', array_filter(['type' => 'quote', 'status' => $filters['status'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-3.5 py-1.5 rounded-lg font-bold transition-colors {{ ($filters['type'] ?? '') === 'quote' ? 'bg-[#9C451B] text-white shadow-sm' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+            📋 RFQ Quotation Requests ({{ $counts['quote'] }})
+        </a>
+    </div>
+
+    <!-- Sort Selector -->
+    <div class="flex items-center gap-2 text-xs">
+        <span class="text-stone-400 text-[11px]">Sort:</span>
+        <a href="{{ route('admin.inquiries.index', array_merge($filters, ['sort' => 'latest'])) }}" 
+           class="px-2.5 py-1 rounded-md text-[11px] font-semibold {{ ($filters['sort'] ?? 'latest') === 'latest' ? 'bg-stone-200 text-stone-900 font-bold' : 'text-stone-500 hover:text-stone-800' }}">
+            Newest First
+        </a>
+        <a href="{{ route('admin.inquiries.index', array_merge($filters, ['sort' => 'oldest'])) }}" 
+           class="px-2.5 py-1 rounded-md text-[11px] font-semibold {{ ($filters['sort'] ?? '') === 'oldest' ? 'bg-stone-200 text-stone-900 font-bold' : 'text-stone-500 hover:text-stone-800' }}">
+            Oldest First
+        </a>
+    </div>
+</div>
+
+<!-- Search & Status Filters Bar -->
+<div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
     <!-- Status Filters -->
-    <div class="flex flex-wrap items-center gap-2 text-xs">
-        <a href="{{ route('admin.inquiries.index', array_filter(['q' => $filters['q'] ?? null, 'type' => $filters['type'] ?? null])) }}" 
-           class="px-3 py-1.5 rounded-lg font-bold transition-colors {{ empty($filters['status']) ? 'bg-[#091433] text-[#EBD6B4]' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+    <div class="flex flex-wrap items-center gap-1.5 text-xs">
+        <span class="text-stone-400 uppercase tracking-wider text-[10px] font-bold mr-1">Status:</span>
+        <a href="{{ route('admin.inquiries.index', array_filter(['type' => $filters['type'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-2.5 py-1 rounded-md font-semibold transition-colors {{ empty($filters['status']) ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200' }}">
             All ({{ $counts['all'] }})
         </a>
-        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'new', 'q' => $filters['q'] ?? null, 'type' => $filters['type'] ?? null])) }}" 
-           class="px-3 py-1.5 rounded-lg font-bold transition-colors {{ ($filters['status'] ?? '') === 'new' ? 'bg-amber-600 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'new', 'type' => $filters['type'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-2.5 py-1 rounded-md font-semibold transition-colors {{ ($filters['status'] ?? '') === 'new' ? 'bg-amber-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200' }}">
             New ({{ $counts['new'] }})
         </a>
-        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'in_progress', 'q' => $filters['q'] ?? null, 'type' => $filters['type'] ?? null])) }}" 
-           class="px-3 py-1.5 rounded-lg font-bold transition-colors {{ ($filters['status'] ?? '') === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'in_progress', 'type' => $filters['type'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-2.5 py-1 rounded-md font-semibold transition-colors {{ ($filters['status'] ?? '') === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200' }}">
             In Progress ({{ $counts['in_progress'] }})
         </a>
-        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'responded', 'q' => $filters['q'] ?? null, 'type' => $filters['type'] ?? null])) }}" 
-           class="px-3 py-1.5 rounded-lg font-bold transition-colors {{ ($filters['status'] ?? '') === 'responded' ? 'bg-purple-600 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'responded', 'type' => $filters['type'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-2.5 py-1 rounded-md font-semibold transition-colors {{ ($filters['status'] ?? '') === 'responded' ? 'bg-purple-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200' }}">
             Responded ({{ $counts['responded'] }})
         </a>
-        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'accepted', 'q' => $filters['q'] ?? null, 'type' => $filters['type'] ?? null])) }}" 
-           class="px-3 py-1.5 rounded-lg font-bold transition-colors {{ ($filters['status'] ?? '') === 'accepted' ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'accepted', 'type' => $filters['type'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-2.5 py-1 rounded-md font-semibold transition-colors {{ ($filters['status'] ?? '') === 'accepted' ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200' }}">
             Accepted ({{ $counts['accepted'] }})
         </a>
-        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'rejected', 'q' => $filters['q'] ?? null, 'type' => $filters['type'] ?? null])) }}" 
-           class="px-3 py-1.5 rounded-lg font-bold transition-colors {{ ($filters['status'] ?? '') === 'rejected' ? 'bg-rose-600 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'rejected', 'type' => $filters['type'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-2.5 py-1 rounded-md font-semibold transition-colors {{ ($filters['status'] ?? '') === 'rejected' ? 'bg-rose-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200' }}">
             Rejected ({{ $counts['rejected'] }})
         </a>
-        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'closed', 'q' => $filters['q'] ?? null, 'type' => $filters['type'] ?? null])) }}" 
-           class="px-3 py-1.5 rounded-lg font-bold transition-colors {{ ($filters['status'] ?? '') === 'closed' ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}">
+        <a href="{{ route('admin.inquiries.index', array_filter(['status' => 'closed', 'type' => $filters['type'] ?? null, 'q' => $filters['q'] ?? null, 'sort' => $filters['sort'] ?? null])) }}" 
+           class="px-2.5 py-1 rounded-md font-semibold transition-colors {{ ($filters['status'] ?? '') === 'closed' ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200' }}">
             Closed ({{ $counts['closed'] }})
         </a>
     </div>
@@ -53,14 +89,20 @@
         @if(!empty($filters['status']))
             <input type="hidden" name="status" value="{{ $filters['status'] }}">
         @endif
+        @if(!empty($filters['type']))
+            <input type="hidden" name="type" value="{{ $filters['type'] }}">
+        @endif
+        @if(!empty($filters['sort']))
+            <input type="hidden" name="sort" value="{{ $filters['sort'] }}">
+        @endif
         <div class="relative">
-            <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Search ref, buyer, product..." class="w-48 sm:w-64 pl-8 pr-3 py-1.5 rounded-lg border border-stone-300 text-xs focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B]">
+            <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Search ref, buyer, subject, email..." class="w-48 sm:w-64 pl-8 pr-3 py-1.5 rounded-lg border border-stone-300 text-xs focus:ring-2 focus:ring-[#9C451B] focus:border-[#9C451B]">
             <svg class="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
         <button type="submit" class="px-3 py-1.5 rounded-lg bg-[#091433] hover:bg-[#394F3D] text-white text-xs font-semibold transition-colors">
             Search
         </button>
-        @if(!empty($filters['q']) || !empty($filters['status']))
+        @if(!empty($filters['q']) || !empty($filters['status']) || !empty($filters['type']))
             <a href="{{ route('admin.inquiries.index') }}" class="text-xs text-stone-500 hover:text-stone-800 underline">
                 Clear
             </a>
@@ -76,9 +118,9 @@
             <tr class="bg-stone-50 text-stone-500 uppercase tracking-wider border-b border-stone-200 text-[11px]">
                 <th class="py-3 px-4">Ref #</th>
                 <th class="py-3 px-4">Type</th>
-                <th class="py-3 px-4">Buyer & Company</th>
-                <th class="py-3 px-4">Requested Products / Commodity</th>
-                <th class="py-3 px-4">Country & Port</th>
+                <th class="py-3 px-4">Buyer &amp; Company</th>
+                <th class="py-3 px-4">Subject / Inquired Commodities</th>
+                <th class="py-3 px-4">Country &amp; Port</th>
                 <th class="py-3 px-4">Status</th>
                 <th class="py-3 px-4">Received</th>
                 <th class="py-3 px-4 text-right">Actions</th>
@@ -92,9 +134,13 @@
                 </td>
                 <td class="py-3.5 px-4">
                     @if($inq->inquiry_type === 'quote')
-                        <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold uppercase text-[9px]">Quote</span>
+                        <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold uppercase text-[9px] border border-purple-200">
+                            Quote RFQ
+                        </span>
                     @else
-                        <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold uppercase text-[9px]">General</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold uppercase text-[9px] border border-emerald-200">
+                            Contact Lead
+                        </span>
                     @endif
                 </td>
                 <td class="py-3.5 px-4">
@@ -103,8 +149,15 @@
                     <a href="mailto:{{ $inq->email }}" class="text-[#9C451B] text-[11px] hover:underline">{{ $inq->email }}</a>
                     <span class="text-[10px] text-stone-400 block">{{ $inq->phone }}</span>
                 </td>
-                <td class="py-3.5 px-4 font-medium text-stone-800">
-                    @if($inq->items->count() > 1)
+                <td class="py-3.5 px-4 font-medium text-stone-800 max-w-xs">
+                    @if($inq->inquiry_type === 'general')
+                        <span class="font-bold text-stone-900 block text-xs">
+                            {{ $inq->subject ?: 'General Trade Inquiry' }}
+                        </span>
+                        <p class="text-[11px] text-stone-500 line-clamp-2 mt-0.5 font-normal">
+                            {{ Str::limit($inq->message, 110) }}
+                        </p>
+                    @elseif($inq->items->count() > 1)
                         <span class="inline-block px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-bold text-[10px] mb-1">
                             {{ $inq->items->count() }} Products in RFQ
                         </span>

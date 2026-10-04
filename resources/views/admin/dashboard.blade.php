@@ -104,7 +104,18 @@
                             <span class="text-stone-500 text-[11px]">{{ $inq->company_name ? $inq->company_name . ' • ' : '' }}{{ $inq->country }}</span>
                         </td>
                         <td class="py-3 px-3 font-medium text-stone-700">
-                            {{ $inq->product?->name ?? 'General Inquiry' }}
+                            @if($inq->inquiry_type === 'quote')
+                                @if($inq->items->count() > 1)
+                                    <span class="text-xs font-semibold text-purple-900 block">{{ $inq->items->count() }} Commodities RFQ</span>
+                                    <span class="text-[10px] text-stone-400">Formal Quotation Request</span>
+                                @else
+                                    <span class="text-xs text-stone-900 block font-semibold">{{ $inq->items->first()?->product_name ?? ($inq->product?->name ?? 'Quotation Request') }}</span>
+                                    <span class="text-[10px] text-purple-700">RFQ Quote</span>
+                                @endif
+                            @else
+                                <span class="text-xs text-[#091433] font-semibold block">{{ $inq->subject ?: 'General Trade Inquiry' }}</span>
+                                <span class="text-[10px] text-emerald-700">Direct Contact Lead</span>
+                            @endif
                         </td>
                         <td class="py-3 px-3">
                             <span class="px-2 py-0.5 rounded border text-[10px] font-bold {{ $inq->status_badge['bg'] }}">

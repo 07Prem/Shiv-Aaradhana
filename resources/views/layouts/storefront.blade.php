@@ -13,6 +13,12 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    @if(!empty($branding['favicon']))
+        <link rel="icon" href="{{ $branding['favicon'] }}">
+    @else
+        <link rel="icon" href="/favicon.ico">
+    @endif
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
@@ -41,9 +47,7 @@
                 <a href="mailto:info.shivaaradhana@gmail.com" class="hover:text-[#EBD6B4] transition-colors truncate max-w-[200px] sm:max-w-none">
                     info.shivaaradhana@gmail.com
                 </a>
-                <a href="{{ route('admin.dashboard') }}" class="hidden sm:inline-block text-[11px] px-2 py-0.5 rounded bg-stone-800 hover:bg-[#394F3D] text-stone-200 transition-colors">
-                    Staff Portal
-                </a>
+
             </div>
         </div>
     </header>
@@ -53,19 +57,28 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <!-- Brand Logo / Identity -->
-                <a href="{{ route('home') }}" class="flex items-center gap-3 group">
-                    <div class="w-11 h-11 rounded-lg bg-gradient-to-br from-[#394F3D] to-[#091433] border border-[#EBD6B4]/40 flex items-center justify-center shadow-md shadow-black/20 group-hover:border-[#EBD6B4] transition-all">
-                        <span class="font-heading font-black text-xl text-[#EBD6B4] tracking-tight">SA</span>
-                    </div>
-                    <div>
-                        <span class="block font-heading text-lg sm:text-xl font-bold tracking-wide text-white group-hover:text-[#EBD6B4] transition-colors">
-                            SHIV AARADHANA
-                        </span>
-                        <span class="block text-[10px] tracking-widest uppercase text-[#EBD6B4]/80 font-medium">
-                            Private Limited &bull; India
-                        </span>
-                    </div>
-                </a>
+                <div class="flex items-center gap-3 group cursor-pointer" 
+                     x-data="{ clicks: 0, timer: null }"
+                     @click.prevent="clicks++; if(clicks === 1) { timer = setTimeout(() => { clicks = 0; window.location.href = '{{ route('home') }}'; }, 250); } else { clearTimeout(timer); clicks = 0; $dispatch('open-logo-viewer', '{{ $branding['light_logo'] ?? $branding['main_logo'] }}'); }">
+                    @if(!empty($branding['light_logo']) || !empty($branding['main_logo']))
+                        <img src="{{ $branding['light_logo'] ?? $branding['main_logo'] }}" 
+                             alt="{{ $branding['company_name'] ?? 'Shiv Aaradhana Private Limited' }}" 
+                             title="Double-tap to view full photo"
+                             class="h-16 sm:h-20 w-auto max-w-[200px] object-contain transition-transform hover:scale-105 p-1">
+                    @else
+                        <div class="w-11 h-11 rounded-lg bg-gradient-to-br from-[#394F3D] to-[#091433] border border-[#EBD6B4]/40 flex items-center justify-center shadow-md shadow-black/20 group-hover:border-[#EBD6B4] transition-all">
+                            <span class="font-heading font-black text-xl text-[#EBD6B4] tracking-tight">SA</span>
+                        </div>
+                        <div>
+                            <span class="block font-heading text-lg sm:text-xl font-bold tracking-wide text-white group-hover:text-[#EBD6B4] transition-colors">
+                                SHIV AARADHANA
+                            </span>
+                            <span class="block text-[10px] tracking-widest uppercase text-[#EBD6B4]/80 font-medium">
+                                Private Limited &bull; India
+                            </span>
+                        </div>
+                    @endif
+                </div>
 
                 <!-- Desktop Navigation Links -->
                 <div class="hidden md:flex items-center gap-8 text-sm font-medium">
@@ -440,14 +453,24 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-stone-800/80">
                 <!-- Col 1: Corporate Profile -->
                 <div class="space-y-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-lg bg-[#394F3D] border border-[#EBD6B4]/40 flex items-center justify-center font-heading font-bold text-[#EBD6B4]">
-                            SA
+                    @if(!empty($branding['light_logo']) || !empty($branding['main_logo']))
+                        <div class="flex items-center gap-3">
+                            <img src="{{ $branding['light_logo'] ?? $branding['main_logo'] }}" 
+                                 alt="{{ $branding['company_name'] ?? 'Shiv Aaradhana Private Limited' }}" 
+                                 @dblclick.prevent.stop="$dispatch('open-logo-viewer', $el.src)"
+                                 title="Double-tap to view full photo"
+                                 class="h-10 w-auto max-w-[180px] object-contain cursor-pointer transition-transform hover:scale-105">
                         </div>
-                        <span class="font-heading text-lg font-bold text-white tracking-wide">
-                            SHIV AARADHANA
-                        </span>
-                    </div>
+                    @else
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-lg bg-[#394F3D] border border-[#EBD6B4]/40 flex items-center justify-center font-heading font-bold text-[#EBD6B4]">
+                                SA
+                            </div>
+                            <span class="font-heading text-lg font-bold text-white tracking-wide">
+                                SHIV AARADHANA
+                            </span>
+                        </div>
+                    @endif
                     <p class="text-xs text-stone-400 leading-relaxed">
                         Shiv Aaradhana Private Limited is a family-owned international import-export and sourcing enterprise rooted in Gujarat, India, carrying forward a fifth-generation agricultural legacy.
                     </p>
@@ -506,12 +529,42 @@
                 <div class="flex items-center gap-6">
                     <a href="{{ route('legal.privacy') }}" class="hover:text-white transition-colors">Privacy</a>
                     <a href="{{ route('legal.terms') }}" class="hover:text-white transition-colors">Terms</a>
-                    <a href="{{ route('sitemap') }}" class="hover:text-white transition-colors">Sitemap.xml</a>
-                    <a href="{{ route('admin.dashboard') }}" class="hover:text-[#EBD6B4] transition-colors">Admin Login</a>
                 </div>
             </div>
         </div>
     </footer>
+
+    <!-- Fullscreen Logo Viewer Overlay -->
+    <div x-data="{ 
+            showLogo: false, 
+            logoSrc: '', 
+            timeout: null,
+            openViewer(src) {
+                this.logoSrc = src;
+                this.showLogo = true;
+                clearTimeout(this.timeout);
+                this.timeout = setTimeout(() => { this.showLogo = false; }, 30000);
+            },
+            closeViewer() {
+                this.showLogo = false;
+                clearTimeout(this.timeout);
+            }
+         }" 
+         @open-logo-viewer.window="openViewer($event.detail)"
+         x-show="showLogo"
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         x-cloak
+         @click="closeViewer()"
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 cursor-pointer backdrop-blur-md">
+        
+        <img :src="logoSrc" class="max-w-[90vw] max-h-[90vh] object-contain drop-shadow-2xl scale-110" alt="Full Logo View" @click.stop>
+        <div class="absolute bottom-10 text-white/50 text-sm tracking-widest uppercase">Tap anywhere to close</div>
+    </div>
 
     @stack('scripts')
 </body>

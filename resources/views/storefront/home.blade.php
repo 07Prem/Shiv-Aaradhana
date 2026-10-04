@@ -63,7 +63,29 @@
             <!-- Right Hero Visual -->
             <div class="lg:col-span-5 relative">
                 <div class="relative mx-auto rounded-2xl overflow-hidden shadow-2xl border border-[#EBD6B4]/20 bg-stone-900 group">
-                    <img src="/images/categories/agro-products.jpg" alt="Shiv Aaradhana Agricultural Heritage" class="w-full h-96 sm:h-[460px] object-cover group-hover:scale-105 transition-transform duration-700">
+                    @php
+                        $heroDesktop = !empty($hero->payload['hero_image_desktop']) 
+                            ? $hero->payload['hero_image_desktop'] 
+                            : '/images/categories/agro-products.jpg';
+                        $heroMobile = !empty($hero->payload['hero_image_mobile']) 
+                            ? $hero->payload['hero_image_mobile'] 
+                            : $heroDesktop;
+                        $heroAlt = !empty($hero->payload['hero_image_alt']) 
+                            ? $hero->payload['hero_image_alt'] 
+                            : 'Shiv Aaradhana Agricultural Heritage and Export Commodities';
+                    @endphp
+                    <picture>
+                        @if(!empty($hero->payload['hero_image_mobile']))
+                            <source media="(max-width: 640px)" srcset="{{ $heroMobile }}">
+                        @endif
+                        <img src="{{ $heroDesktop }}" 
+                             alt="{{ $heroAlt }}" 
+                             class="w-full h-96 sm:h-[460px] object-cover group-hover:scale-105 transition-transform duration-700"
+                             loading="eager"
+                             fetchpriority="high"
+                             width="600"
+                             height="460">
+                    </picture>
                     <div class="absolute inset-0 bg-gradient-to-t from-[#091433] via-transparent to-transparent"></div>
                     
                     <div class="absolute bottom-6 left-6 right-6 p-4 rounded-xl bg-[#091433]/85 backdrop-blur-md border border-white/10 text-white">
@@ -134,9 +156,15 @@
             @foreach($categories as $category)
             <div class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-200/80 flex flex-col justify-between">
                 <div>
-                    <div class="h-48 overflow-hidden relative bg-stone-100">
-                        <img src="{{ $category->image_path ?? '/images/categories/agro-products.jpg' }}" alt="{{ $category->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div class="h-48 overflow-hidden relative bg-stone-200">
+                        @if($category->image_path)
+                            <img src="{{ $category->image_path }}" alt="{{ $category->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        @else
+                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#091433] to-[#394F3D]">
+                                <span class="font-heading font-bold text-[#EBD6B4] text-2xl tracking-widest uppercase opacity-80">No Image</span>
+                            </div>
+                        @endif
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
                         <span class="absolute bottom-3 left-4 text-xs font-bold text-white px-2.5 py-1 rounded bg-[#091433]/80 backdrop-blur-sm">
                             {{ $category->products_count }} {{ Str::plural('Product', $category->products_count) }}
                         </span>

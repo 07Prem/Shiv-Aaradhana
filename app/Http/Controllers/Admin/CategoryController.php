@@ -38,6 +38,7 @@ class CategoryController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'sort_order' => ['integer', 'min:0'],
             'is_active' => ['boolean'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,webp,jpg', 'max:2048'],
         ]);
 
         if (empty($validated['slug'])) {
@@ -45,6 +46,13 @@ class CategoryController extends Controller
         }
 
         $validated['is_active'] = $request->boolean('is_active', true);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('categories', 'public');
+            $validated['image_path'] = \Illuminate\Support\Facades\Storage::url($path);
+        }
+        unset($validated['image']);
+
         $category = Category::create($validated);
 
         AuditLog::record('category_created', "Created category {$category->name}", $category);
@@ -71,9 +79,32 @@ class CategoryController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'sort_order' => ['integer', 'min:0'],
             'is_active' => ['boolean'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,webp,jpg', 'max:2048'],
+            'remove_image' => ['nullable', 'boolean'],
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
+        
+        if ($request->boolean('remove_image') && $category->image_path) {
+            $oldPath = str_replace('/storage/', '', $category->image_path);
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+            }
+            $validated['image_path'] = null;
+        }
+
+        if ($request->hasFile('image')) {
+            if ($category->image_path) {
+                $oldPath = str_replace('/storage/', '', $category->image_path);
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                }
+            }
+            $path = $request->file('image')->store('categories', 'public');
+            $validated['image_path'] = \Illuminate\Support\Facades\Storage::url($path);
+        }
+        unset($validated['image'], $validated['remove_image']);
+
         $category->update($validated);
 
         AuditLog::record('category_updated', "Updated category {$category->name}", $category);
