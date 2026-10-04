@@ -11,7 +11,6 @@ $tmpStorageDirs = [
     '/tmp/storage/framework/sessions',
     '/tmp/storage/framework/views',
     '/tmp/storage/logs',
-    '/tmp/bootstrap/cache',
 ];
 
 if (is_dir('/tmp')) {
@@ -31,26 +30,6 @@ if (is_dir('/tmp')) {
         putenv('VIEW_COMPILED_PATH=/tmp/storage/framework/views');
         $_ENV['VIEW_COMPILED_PATH'] = '/tmp/storage/framework/views';
         $_SERVER['VIEW_COMPILED_PATH'] = '/tmp/storage/framework/views';
-    }
-
-    if (!getenv('APP_CONFIG_CACHE')) {
-        putenv('APP_CONFIG_CACHE=/tmp/bootstrap/cache/config.php');
-    }
-
-    if (!getenv('APP_ROUTES_CACHE')) {
-        putenv('APP_ROUTES_CACHE=/tmp/bootstrap/cache/routes-v7.php');
-    }
-
-    if (!getenv('APP_EVENTS_CACHE')) {
-        putenv('APP_EVENTS_CACHE=/tmp/bootstrap/cache/events.php');
-    }
-
-    if (!getenv('APP_PACKAGES_CACHE')) {
-        putenv('APP_PACKAGES_CACHE=/tmp/bootstrap/cache/packages.php');
-    }
-
-    if (!getenv('APP_SERVICES_CACHE')) {
-        putenv('APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php');
     }
 
     // Default encryption key fallback if not configured in Vercel environment variables
@@ -78,6 +57,13 @@ if (is_dir('/tmp')) {
         $_SERVER['DB_CONNECTION'] = 'sqlite';
         $_SERVER['DB_DATABASE'] = $tmpDb;
     }
+}
+
+// Temporary diagnostic parameter to inspect exact Laravel exception
+if (isset($_GET['__debug_diagnostics'])) {
+    putenv('APP_DEBUG=true');
+    $_ENV['APP_DEBUG'] = 'true';
+    $_SERVER['APP_DEBUG'] = 'true';
 }
 
 // Delegate request processing to standard Laravel entrypoint
