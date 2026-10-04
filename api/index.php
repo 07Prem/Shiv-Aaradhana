@@ -36,6 +36,45 @@ if (is_dir('/tmp')) {
         $_SERVER['VIEW_COMPILED_PATH'] = '/tmp/storage/framework/views';
     }
 
+    // Direct bootstrap cache files to writable /tmp while seeding from pre-bundled manifests
+    if (!getenv('APP_PACKAGES_CACHE')) {
+        $packagesCache = '/tmp/packages.php';
+        if (!file_exists($packagesCache) && file_exists(__DIR__ . '/../bootstrap/cache/packages.php')) {
+            @copy(__DIR__ . '/../bootstrap/cache/packages.php', $packagesCache);
+        }
+        putenv('APP_PACKAGES_CACHE=' . $packagesCache);
+        $_ENV['APP_PACKAGES_CACHE'] = $packagesCache;
+        $_SERVER['APP_PACKAGES_CACHE'] = $packagesCache;
+    }
+
+    if (!getenv('APP_SERVICES_CACHE')) {
+        $servicesCache = '/tmp/services.php';
+        if (!file_exists($servicesCache) && file_exists(__DIR__ . '/../bootstrap/cache/services.php')) {
+            @copy(__DIR__ . '/../bootstrap/cache/services.php', $servicesCache);
+        }
+        putenv('APP_SERVICES_CACHE=' . $servicesCache);
+        $_ENV['APP_SERVICES_CACHE'] = $servicesCache;
+        $_SERVER['APP_SERVICES_CACHE'] = $servicesCache;
+    }
+
+    if (!getenv('APP_CONFIG_CACHE')) {
+        putenv('APP_CONFIG_CACHE=/tmp/config.php');
+        $_ENV['APP_CONFIG_CACHE'] = '/tmp/config.php';
+        $_SERVER['APP_CONFIG_CACHE'] = '/tmp/config.php';
+    }
+
+    if (!getenv('APP_ROUTES_CACHE')) {
+        putenv('APP_ROUTES_CACHE=/tmp/routes-v7.php');
+        $_ENV['APP_ROUTES_CACHE'] = '/tmp/routes-v7.php';
+        $_SERVER['APP_ROUTES_CACHE'] = '/tmp/routes-v7.php';
+    }
+
+    if (!getenv('APP_EVENTS_CACHE')) {
+        putenv('APP_EVENTS_CACHE=/tmp/events.php');
+        $_ENV['APP_EVENTS_CACHE'] = '/tmp/events.php';
+        $_SERVER['APP_EVENTS_CACHE'] = '/tmp/events.php';
+    }
+
     // Default encryption key fallback if not configured in Vercel environment variables
     if (!getenv('APP_KEY')) {
         $defaultKey = 'base64:wE6R+3Yn9K2sF8u1m4L7p0Q5v8X1z4A7d2G5j8M1k4=';
