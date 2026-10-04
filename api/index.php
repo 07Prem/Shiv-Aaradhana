@@ -1,4 +1,3 @@
-
 <?php
 
 // Vercel Serverless Function entry point for Laravel
