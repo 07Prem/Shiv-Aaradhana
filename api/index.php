@@ -1,8 +1,6 @@
 <?php
 
 // Vercel Serverless Function entry point for Laravel
-define('LARAVEL_START', microtime(true));
-
 // Ensure required writable storage and cache directories exist in serverless read-only environments
 $tmpStorageDirs = [
     '/tmp/storage/app',
