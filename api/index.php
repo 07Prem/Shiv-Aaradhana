@@ -1,3 +1,4 @@
+
 <?php
 
 // Vercel Serverless Function entry point for Laravel
@@ -51,6 +52,32 @@ if (is_dir('/tmp')) {
 
     if (!getenv('APP_SERVICES_CACHE')) {
         putenv('APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php');
+    }
+
+    // Default encryption key fallback if not configured in Vercel environment variables
+    if (!getenv('APP_KEY')) {
+        $defaultKey = 'base64:wE6R+3Yn9K2sF8u1m4L7p0Q5v8X1z4A7d2G5j8M1k4=';
+        putenv('APP_KEY=' . $defaultKey);
+        $_ENV['APP_KEY'] = $defaultKey;
+        $_SERVER['APP_KEY'] = $defaultKey;
+    }
+
+    // Prepare SQLite database in /tmp if remote MySQL DB_HOST is not configured
+    if (!getenv('DB_HOST')) {
+        $tmpDb = '/tmp/database.sqlite';
+        if (!file_exists($tmpDb)) {
+            if (file_exists(__DIR__ . '/../database/database.sqlite')) {
+                @copy(__DIR__ . '/../database/database.sqlite', $tmpDb);
+            } else {
+                @touch($tmpDb);
+            }
+        }
+        putenv('DB_CONNECTION=sqlite');
+        putenv('DB_DATABASE=' . $tmpDb);
+        $_ENV['DB_CONNECTION'] = 'sqlite';
+        $_ENV['DB_DATABASE'] = $tmpDb;
+        $_SERVER['DB_CONNECTION'] = 'sqlite';
+        $_SERVER['DB_DATABASE'] = $tmpDb;
     }
 }
 
