@@ -1,6 +1,10 @@
 <?php
 
-// Vercel Serverless Function entry point for Laravel
+// Enable error visibility for serverless execution
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 // Ensure required writable storage and cache directories exist in serverless read-only environments
 $tmpStorageDirs = [
     '/tmp/storage/app',
@@ -59,12 +63,14 @@ if (is_dir('/tmp')) {
     }
 }
 
-// Temporary diagnostic parameter to inspect exact Laravel exception
-if (isset($_GET['__debug_diagnostics'])) {
-    putenv('APP_DEBUG=true');
-    $_ENV['APP_DEBUG'] = 'true';
-    $_SERVER['APP_DEBUG'] = 'true';
+// Delegate request processing to standard Laravel entrypoint with full diagnostic capture
+try {
+    require __DIR__ . '/../public/index.php';
+} catch (\Throwable $e) {
+    http_response_code(500);
+    echo "<h1>Laravel Serverless Execution Exception</h1>";
+    echo "<p><strong>Type:</strong> " . get_class($e) . "</p>";
+    echo "<p><strong>Message:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
+    echo "<p><strong>File:</strong> " . htmlspecialchars($e->getFile()) . " on line " . $e->getLine() . "</p>";
+    echo "<h2>Stack Trace:</h2><pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
 }
-
-// Delegate request processing to standard Laravel entrypoint
-require __DIR__ . '/../public/index.php';
